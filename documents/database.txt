@@ -1,0 +1,3 @@
+PostgreSQL is a relational database management system.
+Database indexes can improve query performance.
+Transactions provide properties including atomicity, consistency, isolation, and durability.

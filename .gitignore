@@ -4,3 +4,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+# Private project learning/context notes
+AI_CONTEXT.md
+PROJECT_LOG.md
+GIT_LEARNING.md

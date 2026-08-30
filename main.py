@@ -1,6 +1,7 @@
 import string
 import math
 from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 
 documents = ["java.txt", "spring.txt", "database.txt"]
 
@@ -120,7 +121,7 @@ for chunk in chunks:
     chunk["embedding"] = model.encode(chunk["text"])
 
 
-def semantic_search(query, chunks, model, top_k):
+def semantic_search(query, chunks, model, top_k, similarity_threshold):
     query_embedding = model.encode(query)
 
     search_results = []
@@ -136,7 +137,8 @@ def semantic_search(query, chunks, model, top_k):
             "similarity": similarity
         }
 
-        search_results.append(result)
+        if (similarity >= similarity_threshold):
+            search_results.append(result)
 
     search_results.sort(
         key=lambda result: result["similarity"],
@@ -146,10 +148,51 @@ def semantic_search(query, chunks, model, top_k):
     return search_results[:top_k]
 
 
-semantic_search_results = semantic_search(query, chunks, model, 2)
+semantic_search_results = semantic_search(query, chunks, model, 2, 0.55)
 
 print("\nSemantic search results:")
 
 for result in semantic_search_results:
     print(result["chunk"]["text"])
     print("similarity:", result["similarity"])
+
+
+def build_context(semantic_search_results):
+    context_string = ""
+    for result in semantic_search_results:
+        context_1 = result["chunk"]["document"]
+        context_2 = result["chunk"]["text"]
+        context_string += "Source: " + context_1 + "\n"
+        context_string += context_2 + "\n" + "\n"
+    return context_string
+
+
+context = build_context(semantic_search_results)
+print("\nContext: " + context)
+
+
+def build_prompt(query, context):
+    prompt = "Answer the question using only the provided context." \
+             + "\n" + \
+             "If the context does not contain enough information to answer the question," + \
+             "\nsay that you do not have enough information.\n" + "\n" + "Context:" + "\n"
+    prompt += context
+    prompt += "Question:\n"
+    prompt += query
+    return prompt
+
+
+prompt = build_prompt(query, context)
+
+print("\nPrompt:")
+print(prompt)
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-5.4-mini",
+    input=prompt
+)
+
+print("\nLLM response:")
+print(response.output_text)
